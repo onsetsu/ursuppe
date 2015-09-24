@@ -68,13 +68,6 @@ var Genetic = Genetic || (function(){
         }
     };
 
-    var Clone = function(obj) {
-        if (obj == null || typeof obj != "object")
-            return obj;
-
-        return JSON.parse(JSON.stringify(obj));
-    };
-
     function Genetic() {
 
         // population
@@ -95,7 +88,6 @@ var Genetic = Genetic || (function(){
             , "iterations": 100
             , "fittestAlwaysSurvives": true
             , "maxResults": 100
-            , "webWorkers": true
             , "skip": 0
         };
 
@@ -104,17 +96,13 @@ var Genetic = Genetic || (function(){
 
         this.entities = [];
 
-        this.usingWebWorker = false;
+        this.callbacks = {
+            'finished': []
+        };
 
         this.start = function() {
 
             var i;
-            var self = this;
-
-            function mutateOrNot(entity) {
-                // applies mutation based on mutation probability
-                return Math.random() <= self.configuration.mutation && self.mutate ? self.mutate(entity) : entity;
-            }
 
             // seed the population
             for (i=0;i<this.configuration.size;++i)  {
@@ -128,11 +116,11 @@ var Genetic = Genetic || (function(){
                 // score and sort
                 var pop = this.entities
                     .map(function (entity) {
-                        return {"fitness": self.fitness(entity), "entity": entity };
-                    })
-                    .sort(function (a, b) {
-                        return self.optimize(a.fitness, b.fitness) ? -1 : 1;
-                    });
+                        return {"fitness": this.fitness(entity), "entity": entity };
+                    }, this)
+                    .sort((function (a, b) {
+                        return this.optimize(a.fitness, b.fitness) ? -1 : 1;
+                    }).bind(this));
 
                 // generation notification
                 var mean = pop.reduce(function (a, b) { return a + b.fitness; }, 0)/pop.length;
@@ -151,54 +139,78 @@ var Genetic = Genetic || (function(){
                 var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
 
                 if (
-                    this.notification
-                    && (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0)
+                    //this.notification
+                    //&&
+                    (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0)
                 ) {
                     this.sendNotification(pop.slice(0, this.maxResults), i, stats, isFinished);
+                }
+
+                if(isFinished) {
+                    var response = {
+                        "pop": pop.slice(0, this.maxResults).map(Serialization.stringify)
+                        , "generation": i
+                        , "stats": stats
+                        , "isFinished": isFinished
+                    };
+
+                    this.callbacks['finished'].forEach(function(callback) {
+                        callback.call(this, response.pop.map(Serialization.parse), response.generation, response.stats, response.isFinished);
+                    }, this);
                 }
 
                 if (isFinished)
                     break;
 
-                // crossover and mutate
-                var newPop = [];
+                this.breed(pop);
+            }
+        }
+    }
 
-                if (this.configuration.fittestAlwaysSurvives) // lets the best solution fall through
-                    newPop.push(pop[0].entity);
+    Genetic.prototype.breed = function(pop) {
+        var mutateOrNot = (function(entity) {
+            // applies mutation based on mutation probability
+            return Math.random() <= this.configuration.mutation && this.mutate ? this.mutate(entity) : entity;
+        }).bind(this);
 
-                while (newPop.length < self.configuration.size) {
-                    if (
-                        this.crossover // if there is a crossover function
-                        && Math.random() <= this.configuration.crossover // base crossover on specified probability
-                        && newPop.length+1 < self.configuration.size // keeps us from going 1 over the max population size
-                    ) {
-                        var parents = this.select2(pop);
-                        var children = this.crossover(Clone(parents[0]), Clone(parents[1])).map(mutateOrNot);
-                        newPop.push(children[0], children[1]);
-                    } else {
-                        newPop.push(mutateOrNot(self.select1(pop)));
-                    }
-                }
+        // crossover and mutate
+        var newPop = [];
 
-                this.entities = newPop;
+        if (this.configuration.fittestAlwaysSurvives) { // lets the best solution fall through
+            newPop.push(pop[0].entity);
+        }
+
+        while (newPop.length < this.configuration.size) {
+            if (
+                this.crossover // if there is a crossover function
+                && Math.random() <= this.configuration.crossover // base crossover on specified probability
+                && newPop.length+1 < this.configuration.size // keeps us from going 1 over the max population size
+            ) {
+                var parents = this.select2(pop);
+                var children = this.crossover(parents[0], parents[1]).map(mutateOrNot);
+                newPop.push(children[0], children[1]);
+            } else {
+                newPop.push(mutateOrNot(this.select1(pop)));
             }
         }
 
-        this.sendNotification = function(pop, generation, stats, isFinished) {
-            var response = {
-                "pop": pop.map(Serialization.stringify)
-                , "generation": generation
-                , "stats": stats
-                , "isFinished": isFinished
-            };
+        this.entities = newPop;
+    };
 
+    Genetic.prototype.on = function(eventName, callback) {
+        this.callbacks[eventName].push(callback);
+    };
 
-            var self = self || this;
-            // self declared outside of scope
-            self.notification(response.pop.map(Serialization.parse), response.generation, response.stats, response.isFinished);
-
+    Genetic.prototype.sendNotification = function(pop, generation, stats, isFinished) {
+        var response = {
+            "pop": pop.map(Serialization.stringify)
+            , "generation": generation
+            , "stats": stats
+            , "isFinished": isFinished
         };
-    }
+
+        this.notification && this.notification(response.pop.map(Serialization.parse), response.generation, response.stats, response.isFinished);
+    };
 
     Genetic.prototype.evolve = function(config, userData) {
 
@@ -211,13 +223,8 @@ var Genetic = Genetic || (function(){
             this.userData[k] = userData[k];
         }
 
-
-        function addslashes(str) {
-            return str.replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
-        }
-
         this.start(null);
-    }
+    };
 
     return {
         "create": function() {
@@ -225,7 +232,6 @@ var Genetic = Genetic || (function(){
         }, "Select1": Select1
         , "Select2": Select2
         , "Optimize": Optimize
-        , "Clone": Clone
     };
 
 })();

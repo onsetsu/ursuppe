@@ -76,18 +76,19 @@ function solveTest(sel1, sel2, config) {
     it(sel1 + ", " + sel2, function (done) {
         genetic.select1 = eval(sel1);
         genetic.select2 = eval(sel2);
-        genetic.notification = function(pop, generation, stats, isFinished) {
+        genetic.on('finished', function(pop, generation, stats, isFinished) {
             if (isFinished) {
                 assert.equal(pop[0].entity, this.userData["solution"]);
                 done();
             }
-        };
+        });
 
         var userData = {
             "solution": "thisisthesolution"
         };
 
         genetic.evolve(config, userData);
+        userData.foo = 'bar';
     });
 }
 
