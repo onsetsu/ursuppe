@@ -40,7 +40,7 @@ describe("Selection", function() {
 		genetic.fitness = function(entity) {
 			return entity;
 		};
-		genetic.notification = function(pop, generation, stats, isFinished) {
+		genetic.on("notification", function(pop, generation, stats, isFinished) {
 			assert.equal(pop.length, 30);
 			
 			// validate ordering
@@ -57,7 +57,7 @@ describe("Selection", function() {
 			if (isFinished) {
 				done();
 			}
-		};
+		});
 		var config = {
 			"iterations": 50
 			, "size": 30
@@ -80,7 +80,7 @@ describe("Selection", function() {
 		genetic.fitness = function(entity) {
 			return entity;
 		};
-		genetic.notification = function(pop, generation, stats, isFinished) {
+		genetic.on("notification", function(pop, generation, stats, isFinished) {
 			assert.equal(pop.length, 30);
 			
 			// validate ordering
@@ -92,7 +92,7 @@ describe("Selection", function() {
 			if (isFinished) {
 				done();
 			}
-		};
+		});
 		var config = {
 			"iterations": 50
 			, "size": 30
@@ -115,7 +115,7 @@ describe("Selection", function() {
 		genetic.fitness = function(entity) {
 			return entity;
 		};
-		genetic.notification = function(pop, generation, stats, isFinished) {
+		genetic.on("notification", function(pop, generation, stats, isFinished) {
 			assert.equal(pop.length, 30);
 			
 			// validate ordering
@@ -127,7 +127,7 @@ describe("Selection", function() {
 			if (isFinished) {
 				done();
 			}
-		};
+		});
 		var config = {
 			"iterations": 50
 			, "size": 30
@@ -150,7 +150,7 @@ describe("Selection", function() {
 		genetic.fitness = function(entity) {
 			return entity;
 		};
-		genetic.notification = function(pop, generation, stats, isFinished) {
+		genetic.on("notification", function(pop, generation, stats, isFinished) {
 			assert.equal(pop.length, 30);
 			
 			// validate ordering
@@ -163,7 +163,7 @@ describe("Selection", function() {
 				assert.equal(pop[0].entity, 0);
 				done();
 			}
-		};
+		});
 		var config = {
 			"iterations": 50
 			, "size": 30
@@ -186,7 +186,7 @@ describe("Selection", function() {
 		genetic.fitness = function(entity) {
 			return entity;
 		};
-		genetic.notification = function(pop, generation, stats, isFinished) {
+		genetic.on("notification", function(pop, generation, stats, isFinished) {
 			assert.equal(pop.length, 30);
 			
 			// validate ordering
@@ -201,7 +201,7 @@ describe("Selection", function() {
 			if (isFinished) {
 				done();
 			}
-		};
+		});
 		var config = {
 			"iterations": 50
 			, "size": 30
@@ -224,7 +224,7 @@ describe("Selection", function() {
 		genetic.fitness = function(entity) {
 			return entity;
 		};
-		genetic.notification = function(pop, generation, stats, isFinished) {
+		genetic.on("notification", function(pop, generation, stats, isFinished) {
 			assert.equal(pop.length, 30);
 			
 			// validate ordering
@@ -245,7 +245,7 @@ describe("Selection", function() {
 				
 				done();
 			}
-		};
+		});
 		var config = {
 			"iterations": 50
 			, "size": 30

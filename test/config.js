@@ -26,7 +26,7 @@ describe("Config", function() {
 		};
 		
 		var count = 0;
-		genetic.notification = function(pop, generation, stats, isFinished) {
+		genetic.on("notification", function(pop, generation, stats, isFinished) {
 			
 			if (!isFinished) {
 				assert.equal(generation%10, 0);
@@ -38,7 +38,7 @@ describe("Config", function() {
 			}
 			
 			++count;
-		};
+		});
 		var config = {
 			"iterations": 100
 			, "size": 30

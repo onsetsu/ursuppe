@@ -46,27 +46,11 @@ var Select2 = {
     }
 };
 
+var ee = require('event-emitter');
+
 var Genetic = Genetic || (function(){
 
     'use strict';
-
-    // facilitates communcation between web workers
-    var Serialization = {
-        "stringify": function (obj) {
-            return JSON.stringify(obj, function (key, value) {
-                if (value instanceof Function || typeof value == "function") return "__func__:" + value.toString();
-                if (value instanceof RegExp) return "__regex__:" + value;
-                return value;
-            });
-        }, "parse": function (str) {
-            return JSON.parse(str, function (key, value) {
-                if (typeof value != "string") return value;
-                if (value.lastIndexOf("__func__:", 0) === 0) return eval('(' + value.slice(9) + ')');
-                if (value.lastIndexOf("__regex__:", 0) === 0) return eval('(' + value.slice(10) + ')');
-                return value;
-            });
-        }
-    };
 
     function Genetic() {
 
@@ -96,13 +80,11 @@ var Genetic = Genetic || (function(){
 
         this.entities = [];
 
-        this.callbacks = {
-            'finished': []
-        };
+        this.emitter = ee({});
 
         this.start = function() {
 
-            var i;
+            var i; // current generation
 
             // seed the population
             for (i=0;i<this.configuration.size;++i)  {
@@ -143,20 +125,16 @@ var Genetic = Genetic || (function(){
                     //&&
                     (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0)
                 ) {
-                    this.sendNotification(pop.slice(0, this.maxResults), i, stats, isFinished);
+                    this.emitter.emit('notification', pop.slice(0, this.maxResults), i, stats, isFinished);
+
                 }
 
                 if(isFinished) {
                     var response = {
-                        "pop": pop.slice(0, this.maxResults).map(Serialization.stringify)
-                        , "generation": i
-                        , "stats": stats
-                        , "isFinished": isFinished
+                        generation: i
                     };
 
-                    this.callbacks['finished'].forEach(function(callback) {
-                        callback.call(this, response.pop.map(Serialization.parse), response.generation, response.stats, response.isFinished);
-                    }, this);
+                    this.emitter.emit('finished', pop, response.generation, stats, isFinished, this.userData);
                 }
 
                 if (isFinished)
@@ -198,18 +176,7 @@ var Genetic = Genetic || (function(){
     };
 
     Genetic.prototype.on = function(eventName, callback) {
-        this.callbacks[eventName].push(callback);
-    };
-
-    Genetic.prototype.sendNotification = function(pop, generation, stats, isFinished) {
-        var response = {
-            "pop": pop.map(Serialization.stringify)
-            , "generation": generation
-            , "stats": stats
-            , "isFinished": isFinished
-        };
-
-        this.notification && this.notification(response.pop.map(Serialization.parse), response.generation, response.stats, response.isFinished);
+        this.emitter.on(eventName, callback);
     };
 
     Genetic.prototype.evolve = function(config, userData) {

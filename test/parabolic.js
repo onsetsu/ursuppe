@@ -84,7 +84,7 @@ function solveTest(sel1, sel2, config) {
 		genetic.select2 = eval(sel2);
 		
 		var gen0fitness;
-		genetic.notification = function(pop, generation, stats, isFinished) {
+		genetic.on("notification", function(pop, generation, stats, isFinished) {
 			if (generation == 0) {
 				gen0fitness = pop[0].fitness;
 			}
@@ -94,7 +94,7 @@ function solveTest(sel1, sel2, config) {
 				assert.equal(pop[0].fitness <= 0.04, true);
 				done();
 			}
-		};
+		});
 	
 		var userData = {
 			"terms": 3
