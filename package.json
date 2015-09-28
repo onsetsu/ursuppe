@@ -1,0 +1,55 @@
+{
+  "name": "ursuppe",
+  "version": "0.0.1",
+  "description": "Genetic programming framework for node.js.",
+  "keywords": [
+    "genetic",
+    "evolution",
+    "evolve",
+    "genetic",
+    "evolutionary",
+    "algorithms",
+    "artificial",
+    "intelligence",
+    "chromosome",
+    "crossover",
+    "mutation",
+    "ai",
+    "gp"
+  ],
+  "homepage": "https://github.com/onsetsu/ursuppe/",
+  "bugs": {
+    "url": "https://github.com/onsetsu/ursuppe/issues",
+    "email": "stefan.lehmann@hpi.de"
+  },
+  "license": "MIT",
+  "contributors": [
+    {
+      "name": "Stefan Lehmann",
+      "email": "stefan.lehmann@hpi.de",
+      "url": "https://github.com/onsetsu"
+    }
+  ],
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/onsetsu/ursuppe.git"
+  },
+  "scripts": {
+    "test": "mocha test --recursive"
+  },
+  "dependencies": {
+    "bluebird": "^2.9.34",
+    "event-emitter": "^0.3.3"
+  },
+  "devDependencies": {
+    "mocha": "^2.3.0"
+  },
+  "engines": {
+    "node": ">= 0.12.4",
+    "npm": "~2.10.1"
+  }
+}
