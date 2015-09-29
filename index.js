@@ -1,6 +1,6 @@
 var Optimize = {
-    "Maximize": function (a, b) { return a >= b; }
-    , "Minimize": function (a, b) { return a < b; }
+    Maximize: function (a, b) { return a >= b; },
+    Minimize: function (a, b) { return a < b; }
 };
 
 var Select1 = {
@@ -63,16 +63,15 @@ var Genetic = Genetic || (function(){
         this.select2 = null;
         this.optimize = null;
         this.generation = null;
-        this.notification = null;
 
         this.configuration = {
-            "size": 250
-            , "crossover": 0.9
-            , "mutation": 0.2
-            , "iterations": 100
-            , "fittestAlwaysSurvives": true
-            , "maxResults": 100
-            , "skip": 0
+            size: 250,
+            crossover: 0.9,
+            mutation: 0.2,
+            iterations: 100,
+            fittestAlwaysSurvives: true,
+            maxResults: 100,
+            skip: 0
         };
 
         this.userData = {};
@@ -82,68 +81,66 @@ var Genetic = Genetic || (function(){
 
         this.emitter = ee({});
 
-        this.start = function() {
+    }
 
-            var i; // current generation
+    Genetic.prototype.start = function() {
 
-            // seed the population
-            for (i=0;i<this.configuration.size;++i)  {
-                this.entities.push(this.seed());
+        var i; // current generation/iteration
+
+        // seed the population
+        for (i=0;i<this.configuration.size;++i)  {
+            this.entities.push(this.seed());
+        }
+
+        for (i=0;i<this.configuration.iterations;++i) {
+            // reset for each generation
+            this.internalGenState = {};
+
+            // score and sort
+            var pop = this.entities
+                .map(function (entity) {
+                    return {"fitness": this.fitness(entity), "entity": entity };
+                }, this)
+                .sort((function (a, b) {
+                    return this.optimize(a.fitness, b.fitness) ? -1 : 1;
+                }).bind(this));
+
+            // generation notification
+            var mean = pop.reduce(function (a, b) { return a + b.fitness; }, 0)/pop.length;
+            var stdev = Math.sqrt(pop
+                    .map(function (a) { return (a.fitness - mean) * (a.fitness - mean); })
+                    .reduce(function (a, b) { return a+b; }, 0)/pop.length);
+
+            var stats = {
+                maximum: pop[0].fitness,
+                minimum: pop[pop.length-1].fitness,
+                mean: mean,
+                stdev: stdev
+            };
+
+            var r = this.generation ? this.generation(pop, i, stats) : true;
+            var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
+
+            if (
+                (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0)
+            ) {
+                this.emitter.emit('notification', pop.slice(0, this.maxResults), i, stats, isFinished);
             }
 
-            for (i=0;i<this.configuration.iterations;++i) {
-                // reset for each generation
-                this.internalGenState = {};
-
-                // score and sort
-                var pop = this.entities
-                    .map(function (entity) {
-                        return {"fitness": this.fitness(entity), "entity": entity };
-                    }, this)
-                    .sort((function (a, b) {
-                        return this.optimize(a.fitness, b.fitness) ? -1 : 1;
-                    }).bind(this));
-
-                // generation notification
-                var mean = pop.reduce(function (a, b) { return a + b.fitness; }, 0)/pop.length;
-                var stdev = Math.sqrt(pop
-                        .map(function (a) { return (a.fitness - mean) * (a.fitness - mean); })
-                        .reduce(function (a, b) { return a+b; }, 0)/pop.length);
-
-                var stats = {
-                    "maximum": pop[0].fitness
-                    , "minimum": pop[pop.length-1].fitness
-                    , "mean": mean
-                    , "stdev": stdev
+            if(isFinished) {
+                var response = {
+                    generation: i
                 };
 
-                var r = this.generation ? this.generation(pop, i, stats) : true;
-                var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
-
-                if (
-                    //this.notification
-                    //&&
-                    (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0)
-                ) {
-                    this.emitter.emit('notification', pop.slice(0, this.maxResults), i, stats, isFinished);
-
-                }
-
-                if(isFinished) {
-                    var response = {
-                        generation: i
-                    };
-
-                    this.emitter.emit('finished', pop, response.generation, stats, isFinished, this.userData);
-                }
-
-                if (isFinished)
-                    break;
-
-                this.breed(pop);
+                this.emitter.emit('finished', pop, response.generation, stats, isFinished, this.userData);
             }
+
+            if (isFinished)
+                break;
+
+            this.breed(pop);
         }
-    }
+    };
 
     Genetic.prototype.breed = function(pop) {
         var mutateOrNot = (function(entity) {
@@ -194,11 +191,12 @@ var Genetic = Genetic || (function(){
     };
 
     return {
-        "create": function() {
+        create: function() {
             return new Genetic();
-        }, "Select1": Select1
-        , "Select2": Select2
-        , "Optimize": Optimize
+        },
+        Select1: Select1,
+        Select2: Select2,
+        Optimize: Optimize
     };
 
 })();
