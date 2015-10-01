@@ -53,6 +53,27 @@ var Select2 = {
 var range = require('range').range;
 var ee = require('event-emitter');
 
+// Promises in a doUntil fashion
+function doUntil(body, terminationCriteria) {
+    function singleIter(prom, cb) {
+        var newProm = prom.then(body);
+
+        newProm.then(function(newValue) {
+            if(terminationCriteria(newValue)) {
+                cb(newValue);
+            } else {
+                singleIter(newProm, cb);
+            }
+        });
+    }
+
+    return function(initialValue) {
+        return new Promise(function(outerResolve, reject) {
+            singleIter(Promise.resolve(initialValue), outerResolve);
+        });
+    }
+}
+
 function Genetic() {
     // population
     this.fitness = null;
@@ -127,36 +148,6 @@ Genetic.prototype.start = function() {
 
     function shouldTerminate(foo) {
         return foo.isFinished;
-    }
-
-    function doUntil(body, terminationCriteria) {
-        return function(foo) {
-            return new Promise((function(outerResolve, reject) {
-
-                // Promises in a doUntil fashion
-                function singleIter(prom, cb) {
-                    var newProm = prom.then(body);
-
-                    newProm.then(function(foo) {
-                        if(terminationCriteria(foo)) {
-                            cb(foo);
-                        } else {
-                            singleIter(newProm, cb);
-                        }
-                    });
-                }
-
-                /*
-                 Promise.resolve(foo)
-                 .then(doUntil(
-                 body,
-                 terminationCriteria
-                 ))
-                 .then(outerResolve);
-                 */
-                singleIter(Promise.resolve(foo), outerResolve);
-            }).bind(this));
-        }
     }
 
     return this.getInitialPopulation()
