@@ -76,8 +76,8 @@ function solveTest(sel1, sel2, config) {
     it(sel1 + ", " + sel2, function (done) {
         genetic.select1 = eval(sel1);
         genetic.select2 = eval(sel2);
-        genetic.on('finished', function(pop, generation, stats, isFinished, userData) {
-            assert.equal(pop[0].entity, userData["solution"]);
+        genetic.on('finished', function(pop, generation, stats, isFinished) {
+            assert.equal(pop[0].entity, this.userData["solution"]);
             done();
         });
 
@@ -86,7 +86,6 @@ function solveTest(sel1, sel2, config) {
         };
 
         genetic.evolve(config, userData);
-        userData.foo = 'bar';
     });
 }
 
