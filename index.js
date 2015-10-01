@@ -105,17 +105,7 @@ Genetic.prototype.start = function() {
                         }).bind(this));
 
                     // generation notification
-                    var mean = pop.reduce(function (a, b) { return a + b.fitness; }, 0)/pop.length;
-                    var stdev = Math.sqrt(pop
-                            .map(function (a) { return (a.fitness - mean) * (a.fitness - mean); })
-                            .reduce(function (a, b) { return a+b; }, 0)/pop.length);
-
-                    var stats = {
-                        maximum: pop[0].fitness,
-                        minimum: pop[pop.length-1].fitness,
-                        mean: mean,
-                        stdev: stdev
-                    };
+                    var stats = this.getStats(pop);
 
                     var r = this.generation ? this.generation(pop, i, stats) : true;
                     var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
@@ -144,6 +134,7 @@ Genetic.prototype.start = function() {
                     entities: entities
                 };
 
+                // Promises in a doUntil fashion
                 function singleIter(prom, cb) {
                     var newProm = prom.then(iteration);
 
@@ -159,6 +150,20 @@ Genetic.prototype.start = function() {
                 singleIter(Promise.resolve(foo), outerResolve);
             }).bind(this));
         }).bind(this));
+};
+
+Genetic.prototype.getStats = function(pop) {
+    var mean = pop.reduce(function (a, b) { return a + b.fitness; }, 0)/pop.length;
+    var stdev = Math.sqrt(pop
+            .map(function (a) { return (a.fitness - mean) * (a.fitness - mean); })
+            .reduce(function (a, b) { return a+b; }, 0)/pop.length);
+
+    return {
+        maximum: pop[0].fitness,
+        minimum: pop[pop.length-1].fitness,
+        mean: mean,
+        stdev: stdev
+    };
 };
 
 Genetic.prototype.breed = function(pop) {
