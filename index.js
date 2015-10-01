@@ -81,9 +81,7 @@ function Genetic() {
 }
 
 Genetic.prototype.start = function() {
-    return Promise.all(range(0, this.configuration.size).map((function(index) {
-        return this.seed();
-    }).bind(this)))
+    return this.getInitialPopulation()
         .then((function(entities) {
             return new Promise((function(outerResolve, reject) {
                 var i = 0; // current generation/iteration/generation number
@@ -153,7 +151,9 @@ Genetic.prototype.start = function() {
 };
 
 Genetic.prototype.getInitialPopulation = function() {
-
+    return Promise.all(range(0, this.configuration.size).map((function(index) {
+        return this.seed();
+    }).bind(this)));
 };
 
 Genetic.prototype.getStats = function(pop) {
