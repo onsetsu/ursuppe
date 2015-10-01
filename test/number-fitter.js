@@ -76,7 +76,7 @@ function solveTest(sel1, sel2, config) {
     it(sel1 + ", " + sel2, function (done) {
         genetic.select1 = eval(sel1);
         genetic.select2 = eval(sel2);
-        genetic.on('finished', function(pop, generation, stats, isFinished) {
+        genetic.on('finished', function(pop, generation, stats) {
             assert.equal(pop[0].entity, this.userData["solution"]);
             done();
         });

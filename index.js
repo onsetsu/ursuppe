@@ -77,8 +77,6 @@ function Genetic() {
     this.userData = {};
     this.internalGenState = {};
 
-    this.entities = [];
-
     this.emitter = ee({});
 }
 
@@ -87,23 +85,20 @@ Genetic.prototype.start = function() {
         return this.seed();
     }).bind(this)))
         .then((function(entities) {
-            // seed the population
-            this.entities = entities;
-
-            return entities;
-        }).bind(this))
-        .then((function() {
             return new Promise((function(outerResolve, reject) {
-                var i; // current generation/iteration
+                var i = 0; // current generation/iteration/generation number
 
-                for (i=0; i < this.configuration.iterations; ++i) {
+                var iteration = (function(bar) {
                     // reset for each generation
                     this.internalGenState = {};
 
                     // score and sort
-                    var pop = this.entities
+                    var pop = bar.entities
                         .map(function (entity) {
-                            return {"fitness": this.fitness(entity), "entity": entity };
+                            return {
+                                fitness: this.fitness(entity),
+                                entity: entity
+                            };
                         }, this)
                         .sort((function (a, b) {
                             return this.optimize(a.fitness, b.fitness) ? -1 : 1;
@@ -130,19 +125,38 @@ Genetic.prototype.start = function() {
                     }
 
                     if(isFinished) {
-                        var response = {
-                            generation: i
+                        this.emitter.emit('finished', pop, i, stats);
+                        ++i;
+                        return {
+                            isFinished: isFinished
                         };
-
-                        this.emitter.emit('finished', pop, response.generation, stats, isFinished);
-
-                        break;
+                    } else {
+                        var newEntities = this.breed(pop);
+                        ++i;
+                        return {
+                            isFinished: isFinished,
+                            entities: newEntities
+                        };
                     }
+                }).bind(this);
 
-                    this.breed(pop);
+                var foo = {
+                    entities: entities
+                };
+
+                function singleIter(prom, cb) {
+                    var newProm = prom.then(iteration);
+
+                    newProm.then(function(foo) {
+                        if(foo.isFinished) {
+                            cb(foo);
+                        } else {
+                            singleIter(newProm, cb);
+                        }
+                    });
                 }
 
-                outerResolve();
+                singleIter(Promise.resolve(foo), outerResolve);
             }).bind(this));
         }).bind(this));
 };
@@ -174,7 +188,7 @@ Genetic.prototype.breed = function(pop) {
         }
     }
 
-    this.entities = newPop;
+    return newPop;
 };
 
 Genetic.prototype.on = function(eventName, callback) {
