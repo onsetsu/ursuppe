@@ -106,45 +106,52 @@ Genetic.prototype.start = function() {
 
     var iteration = (function(bar) {
         return new Promise((function(resolve, reject) {
-            // reset for each generation
-            this.internalGenState = {};
+            Promise.resolve(bar)
+                .then((function(bar) {
+                    // reset for each generation
+                    this.internalGenState = {};
 
-            // score and sort
-            var pop = bar.entities
-                .map(function (entity) {
-                    return {
-                        fitness: this.fitness(entity),
-                        entity: entity
-                    };
-                }, this)
-                .sort((function (a, b) {
-                    return this.optimize(a.fitness, b.fitness) ? -1 : 1;
-                }).bind(this));
+                    // score and sort
+                    var pop = bar.entities
+                        .map(function (entity) {
+                            return {
+                                fitness: this.fitness(entity),
+                                entity: entity
+                            };
+                        }, this)
+                        .sort((function (a, b) {
+                            return this.optimize(a.fitness, b.fitness) ? -1 : 1;
+                        }).bind(this));
 
-            // generation notification
-            var stats = this.getStats(pop);
+                    return pop;
+                }).bind(this))
+                .then((function(pop) {
+                    // generation notification
+                    var stats = this.getStats(pop);
 
-            var r = this.generation ? this.generation(pop, i, stats) : true;
-            var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
+                    var r = this.generation ? this.generation(pop, i, stats) : true;
+                    var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
 
-            if (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0) {
-                this.emitter.emit('notification', pop.slice(0, this.maxResults), i, stats, isFinished);
-            }
+                    if (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0) {
+                        this.emitter.emit('notification', pop.slice(0, this.maxResults), i, stats, isFinished);
+                    }
 
-            if(isFinished) {
-                this.emitter.emit('finished', pop, i, stats);
-                ++i;
-                resolve({
-                    isFinished: isFinished
-                });
-            } else {
-                var newEntities = this.breed(pop);
-                ++i;
-                resolve({
-                    isFinished: isFinished,
-                    entities: newEntities
-                });
-            }
+                    if(isFinished) {
+                        this.emitter.emit('finished', pop, i, stats);
+                        ++i;
+                        return {
+                            isFinished: isFinished
+                        };
+                    } else {
+                        var newEntities = this.breed(pop);
+                        ++i;
+                        return {
+                            isFinished: isFinished,
+                            entities: newEntities
+                        };
+                    }
+                }).bind(this))
+                .then(resolve);
         }).bind(this));
     }).bind(this);
 
