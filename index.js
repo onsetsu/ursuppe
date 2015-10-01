@@ -152,6 +152,10 @@ Genetic.prototype.start = function() {
         }).bind(this));
 };
 
+Genetic.prototype.getInitialPopulation = function() {
+
+};
+
 Genetic.prototype.getStats = function(pop) {
     var mean = pop.reduce(function (a, b) { return a + b.fitness; }, 0)/pop.length;
     var stdev = Math.sqrt(pop

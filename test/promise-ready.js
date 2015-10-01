@@ -9,7 +9,9 @@ describe("Promise", function() {
 
 		// start with random number between 0 and 99
 		genetic.seed = function() {
-			return Math.floor(Math.random() * 100);
+			return Promise.resolve(
+				Math.floor(Math.random() * 100)
+			);
 		};
 
 		// randomly increament or decrement numbers by 1
