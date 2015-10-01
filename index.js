@@ -135,10 +135,10 @@ Genetic.prototype.start = function() {
 
                 // Promises in a doUntil fashion
                 function singleIter(prom, cb) {
-                    var newProm = prom.then(iteration);
+                    var newProm = prom.then(body);
 
                     newProm.then(function(foo) {
-                        if(shouldTerminate(foo)) {
+                        if(terminationCriteria(foo)) {
                             cb(foo);
                         } else {
                             singleIter(newProm, cb);
@@ -161,33 +161,7 @@ Genetic.prototype.start = function() {
 
     return this.getInitialPopulation()
         .then(function(entities) { return { entities: entities }})
-        .then((function(foo) {
-            return new Promise((function(outerResolve, reject) {
-
-                // Promises in a doUntil fashion
-                function singleIter(prom, cb) {
-                    var newProm = prom.then(iteration);
-
-                    newProm.then(function(foo) {
-                        if(shouldTerminate(foo)) {
-                            cb(foo);
-                        } else {
-                            singleIter(newProm, cb);
-                        }
-                    });
-                }
-
-/*
-                Promise.resolve(foo)
-                    .then(doUntil(
-                        body,
-                        terminationCriteria
-                    ))
-                    .then(outerResolve);
-*/
-                singleIter(Promise.resolve(foo), outerResolve);
-            }).bind(this));
-        }).bind(this));
+        .then(doUntil(iteration, shouldTerminate));
 };
 
 Genetic.prototype.getInitialPopulation = function() {
