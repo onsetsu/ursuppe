@@ -81,63 +81,64 @@ function Genetic() {
 }
 
 Genetic.prototype.start = function() {
-    return this.getInitialPopulation()
-        .then((function(entities) {
-            return new Promise((function(outerResolve, reject) {
-                var i = 0; // current generation/iteration/generation number
+    var i = 0; // current generation/iteration/generation number
 
-                var iteration = (function(bar) {
-                    // reset for each generation
-                    this.internalGenState = {};
+    var iteration = (function(bar) {
+        // reset for each generation
+        this.internalGenState = {};
 
-                    // score and sort
-                    var pop = bar.entities
-                        .map(function (entity) {
-                            return {
-                                fitness: this.fitness(entity),
-                                entity: entity
-                            };
-                        }, this)
-                        .sort((function (a, b) {
-                            return this.optimize(a.fitness, b.fitness) ? -1 : 1;
-                        }).bind(this));
-
-                    // generation notification
-                    var stats = this.getStats(pop);
-
-                    var r = this.generation ? this.generation(pop, i, stats) : true;
-                    var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
-
-                    if (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0) {
-                        this.emitter.emit('notification', pop.slice(0, this.maxResults), i, stats, isFinished);
-                    }
-
-                    if(isFinished) {
-                        this.emitter.emit('finished', pop, i, stats);
-                        ++i;
-                        return {
-                            isFinished: isFinished
-                        };
-                    } else {
-                        var newEntities = this.breed(pop);
-                        ++i;
-                        return {
-                            isFinished: isFinished,
-                            entities: newEntities
-                        };
-                    }
-                }).bind(this);
-
-                var foo = {
-                    entities: entities
+        // score and sort
+        var pop = bar.entities
+            .map(function (entity) {
+                return {
+                    fitness: this.fitness(entity),
+                    entity: entity
                 };
+            }, this)
+            .sort((function (a, b) {
+                return this.optimize(a.fitness, b.fitness) ? -1 : 1;
+            }).bind(this));
+
+        // generation notification
+        var stats = this.getStats(pop);
+
+        var r = this.generation ? this.generation(pop, i, stats) : true;
+        var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
+
+        if (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0) {
+            this.emitter.emit('notification', pop.slice(0, this.maxResults), i, stats, isFinished);
+        }
+
+        if(isFinished) {
+            this.emitter.emit('finished', pop, i, stats);
+            ++i;
+            return {
+                isFinished: isFinished
+            };
+        } else {
+            var newEntities = this.breed(pop);
+            ++i;
+            return {
+                isFinished: isFinished,
+                entities: newEntities
+            };
+        }
+    }).bind(this);
+
+    function shouldTerminate(foo) {
+        return foo.isFinished;
+    }
+
+    function doUntil(body, terminationCriteria) {
+        return function(foo) {
+            return new Promise((function(outerResolve, reject) {
 
                 // Promises in a doUntil fashion
                 function singleIter(prom, cb) {
                     var newProm = prom.then(iteration);
 
                     newProm.then(function(foo) {
-                        if(foo.isFinished) {
+                        if(shouldTerminate(foo)) {
                             cb(foo);
                         } else {
                             singleIter(newProm, cb);
@@ -145,6 +146,45 @@ Genetic.prototype.start = function() {
                     });
                 }
 
+                /*
+                 Promise.resolve(foo)
+                 .then(doUntil(
+                 body,
+                 terminationCriteria
+                 ))
+                 .then(outerResolve);
+                 */
+                singleIter(Promise.resolve(foo), outerResolve);
+            }).bind(this));
+        }
+    }
+
+    return this.getInitialPopulation()
+        .then(function(entities) { return { entities: entities }})
+        .then((function(foo) {
+            return new Promise((function(outerResolve, reject) {
+
+                // Promises in a doUntil fashion
+                function singleIter(prom, cb) {
+                    var newProm = prom.then(iteration);
+
+                    newProm.then(function(foo) {
+                        if(shouldTerminate(foo)) {
+                            cb(foo);
+                        } else {
+                            singleIter(newProm, cb);
+                        }
+                    });
+                }
+
+/*
+                Promise.resolve(foo)
+                    .then(doUntil(
+                        body,
+                        terminationCriteria
+                    ))
+                    .then(outerResolve);
+*/
                 singleIter(Promise.resolve(foo), outerResolve);
             }).bind(this));
         }).bind(this));
