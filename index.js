@@ -105,54 +105,51 @@ Genetic.prototype.start = function() {
     var i = 0; // current generation/iteration/generation number
 
     var iteration = (function(bar) {
-        return new Promise((function(resolve, reject) {
-            Promise.resolve(bar)
-                .then((function(bar) {
-                    // reset for each generation
-                    this.internalGenState = {};
+        return Promise.resolve(bar)
+            .then((function(bar) {
+                // reset for each generation
+                this.internalGenState = {};
 
-                    // score and sort
-                    var pop = bar.entities
-                        .map(function (entity) {
-                            return {
-                                fitness: this.fitness(entity),
-                                entity: entity
-                            };
-                        }, this)
-                        .sort((function (a, b) {
-                            return this.optimize(a.fitness, b.fitness) ? -1 : 1;
-                        }).bind(this));
-
-                    return pop;
-                }).bind(this))
-                .then((function(pop) {
-                    // generation notification
-                    var stats = this.getStats(pop);
-
-                    var r = this.generation ? this.generation(pop, i, stats) : true;
-                    var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
-
-                    if (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0) {
-                        this.emitter.emit('notification', pop.slice(0, this.maxResults), i, stats, isFinished);
-                    }
-
-                    if(isFinished) {
-                        this.emitter.emit('finished', pop, i, stats);
-                        ++i;
+                // score and sort
+                var pop = bar.entities
+                    .map(function (entity) {
                         return {
-                            isFinished: isFinished
+                            fitness: this.fitness(entity),
+                            entity: entity
                         };
-                    } else {
-                        var newEntities = this.breed(pop);
-                        ++i;
-                        return {
-                            isFinished: isFinished,
-                            entities: newEntities
-                        };
-                    }
-                }).bind(this))
-                .then(resolve);
-        }).bind(this));
+                    }, this)
+                    .sort((function (a, b) {
+                        return this.optimize(a.fitness, b.fitness) ? -1 : 1;
+                    }).bind(this));
+
+                return pop;
+            }).bind(this))
+            .then((function(pop) {
+                // generation notification
+                var stats = this.getStats(pop);
+
+                var r = this.generation ? this.generation(pop, i, stats) : true;
+                var isFinished = (typeof r != "undefined" && !r) || (i == this.configuration.iterations-1);
+
+                if (isFinished || this.configuration["skip"] == 0 || i%this.configuration["skip"] == 0) {
+                    this.emitter.emit('notification', pop.slice(0, this.maxResults), i, stats, isFinished);
+                }
+
+                if(isFinished) {
+                    this.emitter.emit('finished', pop, i, stats);
+                    ++i;
+                    return {
+                        isFinished: isFinished
+                    };
+                } else {
+                    var newEntities = this.breed(pop);
+                    ++i;
+                    return {
+                        isFinished: isFinished,
+                        entities: newEntities
+                    };
+                }
+            }).bind(this));
     }).bind(this);
 
     function shouldTerminate(foo) {
