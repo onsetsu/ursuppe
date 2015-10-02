@@ -42,7 +42,7 @@
     "test": "mocha test --recursive"
   },
   "dependencies": {
-    "bluebird": "^2.10.1",
+    "bluebird": "^2.10.2",
     "event-emitter": "^0.3.3",
     "range": "0.0.3"
   },
