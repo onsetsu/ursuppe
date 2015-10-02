@@ -52,6 +52,7 @@ var Select2 = {
 
 var range = require('range').range;
 var ee = require('event-emitter');
+var Promise = require('bluebird');
 
 // Promises in a doUntil fashion
 function doUntil(body, terminationCriteria) {
@@ -105,26 +106,25 @@ Genetic.prototype.start = function() {
     var i = 0; // current generation/iteration/generation number
 
     var iteration = (function(bar) {
-        return Promise.resolve(bar)
-            .then((function(bar) {
-                // reset for each generation
-                this.internalGenState = {};
+        this.internalGenState = {};
 
-                // score and sort
-                var pop = bar.entities
-                    .map(function (entity) {
+        return Promise.all(bar.entities.map(function(entity) {
+                return Promise.resolve(entity)
+                    .then(this.fitness.bind(this))
+                    .then(function(fitness) {
                         return {
-                            fitness: this.fitness(entity),
+                            fitness: fitness,
                             entity: entity
                         };
-                    }, this)
-                    .sort((function (a, b) {
-                        return this.optimize(a.fitness, b.fitness) ? -1 : 1;
-                    }).bind(this));
-
-                return pop;
-            }).bind(this))
-            .then((function(pop) {
+                    });
+            }, this))
+            .bind(this)
+            .then(function(pop) {
+                return pop.sort((function (a, b) {
+                    return this.optimize(a.fitness, b.fitness) ? -1 : 1;
+                }).bind(this));
+            })
+            .then(function(pop) {
                 // generation notification
                 var stats = this.getStats(pop);
 
@@ -149,7 +149,7 @@ Genetic.prototype.start = function() {
                         entities: newEntities
                     };
                 }
-            }).bind(this));
+            });
     }).bind(this);
 
     function shouldTerminate(foo) {
@@ -162,9 +162,9 @@ Genetic.prototype.start = function() {
 };
 
 Genetic.prototype.getInitialPopulation = function() {
-    return Promise.all(range(0, this.configuration.size).map((function(index) {
+    return Promise.all(range(0, this.configuration.size).map(function(index) {
         return this.seed();
-    }).bind(this)));
+    }, this));
 };
 
 Genetic.prototype.getStats = function(pop) {

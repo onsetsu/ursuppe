@@ -1,5 +1,6 @@
 var Genetic = require("../index.js");
 var assert = require("assert");
+var Promise = require("bluebird");
 
 describe("Promise", function() {
 	it("can use promises everywhere", function (done) {
@@ -11,7 +12,7 @@ describe("Promise", function() {
 		genetic.seed = function() {
 			return Promise.resolve(
 				Math.floor(Math.random() * 100)
-			);
+			).delay(10);
 		};
 
 		// randomly increament or decrement numbers by 1
@@ -22,7 +23,7 @@ describe("Promise", function() {
 
 		// fitness equals difference to 50
 		genetic.fitness = function(entity) {
-			return Math.abs(entity - 50);
+			return Promise.resolve(Math.abs(entity - 50)).delay(5);
 		};
 
 		// termination criteria
