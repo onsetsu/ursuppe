@@ -7,6 +7,7 @@ describe("Promise", function() {
 		var genetic = Genetic.create();
 		genetic.optimize = Genetic.Optimize.Minimize;
 		genetic.select1 = Genetic.Select1.Tournament2;
+		//genetic.select2 = Genetic.Select2.Tournament2;
 
 		// start with random number between 0 and 99
 		genetic.seed = function() {
@@ -15,11 +16,15 @@ describe("Promise", function() {
 			).delay(10);
 		};
 
-		// randomly increament or decrement numbers by 1
+		// randomly increment or decrement numbers by 1
 		genetic.mutate = function(entity) {
 			//console.log(entity);
-			return Math.random() <= 0.5 ? entity - 1 : entity + 1;
+			return Promise.resolve(Math.random() <= 0.5 ? entity - 1 : entity + 1).delay(10);
 		};
+
+		//genetic.crossover = function(entity1, entity2) {
+		//	return Promise.resolve([entity1 + 2, entity2 - 2]).delay(10);
+		//};
 
 		// fitness equals difference to 50
 		genetic.fitness = function(entity) {
@@ -33,9 +38,12 @@ describe("Promise", function() {
 
 		genetic.on("finished", function(pop, generation, stats) {
 			console.log(stats);
-			for (i=0;i<pop.length;++i) {
-				//console.log(pop[i].fitness, pop[i].entity);
-			}
+
+			// stats should not contain NaN
+			assert.equal(stats.maximum, stats.maximum);
+			assert.equal(stats.minimum, stats.minimum);
+			assert.equal(stats.mean, stats.mean);
+			assert.equal(stats.stdev, stats.stdev);
 		});
 
 		var config = {

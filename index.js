@@ -142,12 +142,15 @@ Genetic.prototype.start = function() {
                         isFinished: isFinished
                     };
                 } else {
-                    var newEntities = this.breed(pop);
                     ++i;
-                    return {
-                        isFinished: isFinished,
-                        entities: newEntities
-                    };
+                    return Promise.resolve(pop)
+                        .then(this.breed.bind(this))
+                        .then(function(newEntities) {
+                            return {
+                                isFinished: isFinished,
+                                entities: newEntities
+                            };
+                        });
                 }
             });
     }).bind(this);
@@ -182,33 +185,38 @@ Genetic.prototype.getStats = function(pop) {
 };
 
 Genetic.prototype.breed = function(pop) {
-    var mutateOrNot = (function(entity) {
+    function mutateOrNot(entity) {
         // applies mutation based on mutation probability
         return Math.random() <= this.configuration.mutation && this.mutate ? this.mutate(entity) : entity;
-    }).bind(this);
-
-    // crossover and mutate
-    var newPop = [];
-
-    if (this.configuration.fittestAlwaysSurvives) { // lets the best solution fall through
-        newPop.push(pop[0].entity);
     }
 
-    while (newPop.length < this.configuration.size) {
-        if (
-            this.crossover // if there is a crossover function
-            && Math.random() <= this.configuration.crossover // base crossover on specified probability
-            && newPop.length+1 < this.configuration.size // keeps us from going 1 over the max population size
-        ) {
-            var parents = this.select2(pop);
-            var children = this.crossover(parents[0], parents[1]).map(mutateOrNot);
-            newPop.push(children[0], children[1]);
-        } else {
-            newPop.push(mutateOrNot(this.select1(pop)));
+    return Promise.resolve()
+        .bind(this)
+        .then(function() {
+            // crossover and mutate
+            var newPop = [];
+
+            if (this.configuration.fittestAlwaysSurvives) { // lets the best solution fall through
+                newPop.push(pop[0].entity);
+            }
+
+            while (newPop.length < this.configuration.size) {
+                if (
+                    this.crossover // if there is a crossover function
+                    && Math.random() <= this.configuration.crossover // base crossover on specified probability
+                    && newPop.length+1 < this.configuration.size // keeps us from going 1 over the max population size
+                ) {
+                    var parents = this.select2(pop);
+                    var children = this.crossover(parents[0], parents[1]);
+                    newPop.push(children[0], children[1]);
+                } else {
+                    newPop.push((this.select1(pop)));
+                }
+            }
+
+            return newPop;
         }
-    }
-
-    return newPop;
+    ).map(mutateOrNot);
 };
 
 Genetic.prototype.on = function(eventName, callback) {
