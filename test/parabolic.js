@@ -115,7 +115,7 @@ describe("Genetic Parabolic Solver", function() {
 	};
 	
 	
-	var k;
+	var k, j;
 	for (k in Genetic.Select1) {
 		for (j in Genetic.Select2) {
 			solveTest("Genetic.Select1."+k, "Genetic.Select2."+j, config);
