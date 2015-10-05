@@ -108,9 +108,8 @@ Genetic.prototype.start = function() {
     var iteration = (function(bar) {
         this.internalGenState = {};
 
-        return Promise.all(bar.entities.map(function(entity) {
-                return Promise.resolve(entity)
-                    .then(this.fitness.bind(this))
+        return Promise.all(bar.entities.map(function(entity, index) {
+                return Promise.resolve(this.fitness(entity, index))
                     .then(function(fitness) {
                         return {
                             fitness: fitness,
@@ -194,13 +193,20 @@ Genetic.prototype.breed = function(pop) {
         .bind(this)
         .then(function() {
             // crossover and mutate
-            var newPop = [];
 
-            if (this.configuration.fittestAlwaysSurvives) { // lets the best solution fall through
-                newPop.push(pop[0].entity);
-            }
+            var appendFittest = (function(newPop) {
+                if (this.configuration.fittestAlwaysSurvives) { // lets the best solution fall through
+                    newPop.push(pop[0].entity);
+                }
 
-            while (newPop.length < this.configuration.size) {
+                return newPop;
+            }).bind(this);
+
+            var newPopulationComplete = (function(newPop) {
+                return newPop.length >= this.configuration.size;
+            }).bind(this);
+
+            var populate = (function(newPop) {
                 if (
                     this.crossover // if there is a crossover function
                     && Math.random() <= this.configuration.crossover // base crossover on specified probability
@@ -212,9 +218,18 @@ Genetic.prototype.breed = function(pop) {
                 } else {
                     newPop.push((this.select1(pop)));
                 }
-            }
 
-            return newPop;
+                return newPop;
+            }).bind(this);
+
+            return Promise.resolve([])
+                .then(appendFittest)
+                // TODO: should be done in the following fashion
+                // while (newPopulationComplete()) {
+                //   populate();
+                // }
+                // so if the population size is 1 with the fittest surviving, we currently get 2 individuals
+                .then(doUntil(populate, newPopulationComplete));
         }
     ).map(mutateOrNot);
 };
