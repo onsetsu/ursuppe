@@ -1,6 +1,6 @@
 {
   "name": "ursuppe",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Genetic programming framework for node.js.",
   "keywords": [
     "genetic",
