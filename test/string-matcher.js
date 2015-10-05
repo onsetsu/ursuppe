@@ -92,7 +92,7 @@ function solveTest(sel1, sel2, config) {
 describe("Genetic String Solver", function() {
 
     var config = {
-        "iterations": 2000
+        "iterations": 4000
         , "size": 20
         , "crossover": 0.4
         , "mutation": 0.3
