@@ -212,14 +212,19 @@ Genetic.prototype.breed = function(pop) {
                     && Math.random() <= this.configuration.crossover // base crossover on specified probability
                     && newPop.length+1 < this.configuration.size // keeps us from going 1 over the max population size
                 ) {
-                    var parents = this.select2(pop);
-                    var children = this.crossover(parents[0], parents[1]);
-                    newPop.push(children[0], children[1]);
+                    return Promise.resolve(this.select2(pop))
+                        .spread(this.crossover)
+                        .then(function(children) {
+                            newPop.push(children[0], children[1]);
+                            return newPop;
+                        });
                 } else {
-                    newPop.push((this.select1(pop)));
+                    return Promise.resolve(this.select1(pop))
+                        .then(function(individual) {
+                            newPop.push(individual);
+                            return newPop;
+                        });
                 }
-
-                return newPop;
             }).bind(this);
 
             return Promise.resolve([])

@@ -7,7 +7,7 @@ describe("Promise", function() {
 		var genetic = Genetic.create();
 		genetic.optimize = Genetic.Optimize.Minimize;
 		genetic.select1 = Genetic.Select1.Tournament2;
-		//genetic.select2 = Genetic.Select2.Tournament2;
+		genetic.select2 = Genetic.Select2.Tournament2;
 
 		// start with random number between 0 and 99
 		genetic.seed = function() {
@@ -22,9 +22,9 @@ describe("Promise", function() {
 			return Promise.resolve(Math.random() <= 0.5 ? entity - 1 : entity + 1).delay(10);
 		};
 
-		//genetic.crossover = function(entity1, entity2) {
-		//	return Promise.resolve([entity1 + 2, entity2 - 2]).delay(10);
-		//};
+		genetic.crossover = function(entity1, entity2) {
+			return Promise.resolve([entity1 + 2, entity2 - 2]).delay(10);
+		};
 
 		// fitness equals difference to 50
 		genetic.fitness = function(entity) {
